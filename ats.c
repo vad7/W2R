@@ -2,14 +2,14 @@
  * ATS W2R.c
  *
  * Created: 12.04.2022 15:00:00
- * v. 1.0
+ * v. 1.1
  *  Author: Vadim Kulakov, vad7@yahoo.com
  * 
  * ATTiny13A
  *
  */ 
 #define F_CPU 4700000UL
-// Fuses(0=active): BODLEVEL = 2.7V (BODLEVEL[1:0] = 01), RSTDISBL=0, CKDIV8=0, CKSEL[1:0]=01 (4.8MHz), SUT[1:0]=01
+// Fuses(0=active): BODLEVEL = 2.7V (BODLEVEL[1:0] = 01), RSTDISBL=0, CKDIV8=0, CKSEL[1:0]=01 (4.8MHz), SUT[1:0]=01. Low:F5,High:FA
 // MK power drawing 2.8 mA
 
 #include <avr/io.h>
@@ -19,6 +19,7 @@
 #include <avr/eeprom.h>
 #include <util/delay.h>
 
+#define MAX_TIME_TO_DETECT 4  // *0.001 sec. To detect line power lost 
 #define RELAY_LINE_PIN	(1<<PORTB4)
 #define RELAY_LINE_ON	PORTB |= RELAY_LINE_PIN; 
 #define RELAY_LINE_OFF	PORTB &= ~RELAY_LINE_PIN
@@ -98,7 +99,7 @@ ISR(PCINT0_vect, ISR_NAKED)
 //		RELAY_GEN_ON;
 	} else {
 		line_pin = 0;
-		timer_10ms = 6; // *0.001 s
+		timer_10ms = MAX_TIME_TO_DETECT; // *0.001 s
 //		RELAY_GEN_OFF;
 	}
 	reti();
@@ -151,8 +152,8 @@ xGEN_ON:				LED_GEN_OFF;
 						timer = eeprom.relay_on_time;
 						timer_100ms = 0;
 					} else {
+x_switch_to_Line:
 						LED_LINE_ON;
-						repeat_line_cnt = eeprom.repeat_switch_to_line_times;
 						doing = WD_DELAY_SWITCH_TO_LINE;
 						timer = eeprom.delay_switch_to_line;
 						timer_100ms = 0;
@@ -160,12 +161,13 @@ xGEN_ON:				LED_GEN_OFF;
 				}
 			} else if(pos == WP_UNKNOWN) {
 				if(line_active) {
-					RELAY_GEN_OFF;
-					RELAY_LINE_ON; 
-					LED_LINE_OFF;
-					doing = WD_RELAY_LINE;
-					timer = eeprom.relay_on_time;
-					timer_100ms = 0;
+					goto x_switch_to_Line;
+// 					RELAY_GEN_OFF;
+// 					RELAY_LINE_ON; 
+// 					LED_LINE_OFF;
+// 					doing = WD_RELAY_LINE;
+// 					timer = eeprom.relay_on_time;
+//					timer_100ms = 0;
 				} else if(gen_active) {
 					RELAY_LINE_OFF;
 					LED_GEN_OFF;
