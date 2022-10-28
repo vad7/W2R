@@ -10,3 +10,5 @@ ATS W2R board replacement (fix)
 Все это можно исправить, заменив плату управления на свою с микроконтроллером внутри...
 
 Полное описание работы здесь: https://vad-7.blogspot.com/2022/07/ats-w2r.html
+
+Attiny13A fuses: Low: F5, High: FA.
